@@ -1,6 +1,6 @@
 module contract
 
-go 1.23.5
+go 1.22
 
 require (
 	git.frostfs.info/TrueCloudLab/frostfs-node v0.44.4
@@ -11,7 +11,7 @@ require (
 	go.uber.org/zap v1.27.0
 )
 
-// replace github.com/nspcc-dev/neo-go => git.frostfs.info/TrueCloudLab/neoneo-go v0.106.1-0.20241015133823-8aee80dbdc07
+replace github.com/nspcc-dev/neo-go => git.frostfs.info/TrueCloudLab/neoneo-go v0.106.1-0.20241015133823-8aee80dbdc07
 
 require (
 	git.frostfs.info/TrueCloudLab/frostfs-contract v0.21.0-rc.4 // indirect
@@ -44,7 +44,6 @@ require (
 	github.com/nspcc-dev/go-ordered-json v0.0.0-20240830112754-291b000d1f3b // indirect
 	github.com/nspcc-dev/rfc6979 v0.2.3 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.2 // indirect
-	github.com/pierrec/lz4 v2.6.1+incompatible // indirect
 	github.com/prometheus/client_golang v1.20.2 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.55.0 // indirect
