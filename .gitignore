@@ -1,0 +1,40 @@
+# Binaries for programs and plugins
+*.exe
+*.dll
+*.so
+*.dylib
+*.test
+
+# Go build artifacts
+*.out
+
+# Logs and debugging
+*.log
+*.trace
+
+# Temporary files
+*.tmp
+*.swp
+
+# IDE-specific files
+.vscode/
+.idea/
+
+# OS-generated files
+.DS_Store
+Thumbs.db
+
+# Go workspace files
+go.work
+go.work.sum
+
+# Private or sensitive files
+wallet.json
+user-cli-cfg.yaml
+config.yaml
+
+# Ignore node_modules (if any Node.js dependencies are used)
+node_modules/
+
+# Ignore your executable output
+/goofyahhdocument.txt
