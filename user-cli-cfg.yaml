@@ -1,0 +1,3 @@
+wallet: /config/user-wallet.json
+password: ""
+rpc-endpoint: localhost:8080

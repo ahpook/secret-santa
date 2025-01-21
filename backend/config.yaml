@@ -1,0 +1,8 @@
+wallet: "/backend/wallet.json"
+password: ""
+rpc_endpoint: "http://localhost:30333"
+rpc_endpoint_ws: "ws://localhost:30333/ws"
+goofyahhdocuments_contract: "???"
+storage_node: "localhost:8080"
+storage_container: "FAz3eCtSLsgEUk7FhGcbP4e62gMZ4TBScdUQNH9oRBF3"
+listen_address: ":5555"
