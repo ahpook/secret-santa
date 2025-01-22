@@ -29,7 +29,6 @@ go.work
 go.work.sum
 
 # Private or sensitive files
-wallet.json
 user-cli-cfg.yaml
 config.yaml
 
