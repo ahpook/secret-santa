@@ -1,0 +1,21 @@
+name: DocumentManager
+sourceurl: http://example.com/
+safemethods: []
+supportedstandards: []
+events:
+  - name: DocumentAdded
+    parameters:
+      - name: owner
+        type: Hash160
+      - name: name
+        type: String
+      - name: contentHash
+        type: Hash256
+  - name: DocumentDeleted
+    parameters:
+      - name: owner
+        type: Hash160
+      - name: contentHash
+        type: Hash256
+permissions:
+  - methods: '*'

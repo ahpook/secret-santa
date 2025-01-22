@@ -3,6 +3,8 @@ package main
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"net/http"
 	"os"
@@ -51,7 +53,8 @@ type Server struct {
 }
 
 func main() {
-	ctx, _ := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer cancel()
 
 	if len(os.Args) != 2 {
 		die(fmt.Errorf("invalid args: %v", os.Args))
@@ -67,7 +70,29 @@ func main() {
 	s, err := NewServer(ctx)
 	die(err)
 
-	die(s.Listen(ctx))
+	// Start a goroutine to handle graceful shutdown
+	done := make(chan struct{})
+	go func() {
+		<-ctx.Done() // Wait for a termination signal
+		fmt.Println("\nShutting down gracefully...")
+
+		// Perform any cleanup for the server
+		s.cleanup()
+
+		// Signal completion of shutdown
+		close(done)
+	}()
+
+	// Start listening (HTTP server)
+	err = s.Listen(ctx)
+	if err != nil {
+		fmt.Printf("Server error: %v\n", err)
+		s.cleanup() // Trigger cleanup on server error
+	}
+
+	// Wait for shutdown to complete
+	<-done
+	fmt.Println("Shutdown complete.")
 }
 
 func NewServer(ctx context.Context) (*Server, error) {
@@ -151,29 +176,91 @@ func NewServer(ctx context.Context) (*Server, error) {
 }
 
 func (s *Server) Listen(ctx context.Context) error {
-	// Load the local file
-	filePath := "goofyahhdocument.txt" // Path to the file in the root of your repo
-	fileContent, err := os.ReadFile(filePath)
-	if err != nil {
-		return fmt.Errorf("failed to read file: %w", err)
-	}
+	http.DefaultServeMux.HandleFunc("/put", func(w http.ResponseWriter, r *http.Request) {
+		s.log.Info("PUT request received")
+		file, _, err := r.FormFile("file")
+		if err != nil {
+			http.Error(w, "Failed to parse file: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+		defer file.Close()
 
-	// Upload the file to FrostFS
-	err = s.uploadFileToFrostFS(ctx, fileContent, "goofyahhdocument.txt")
-	if err != nil {
-		return fmt.Errorf("failed to upload file to FrostFS: %w", err)
-	}
+		// Read file content
+		var buf bytes.Buffer
+		_, err = buf.ReadFrom(file)
+		if err != nil {
+			http.Error(w, "Failed to read file: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		fileContent := buf.Bytes()
 
-	// s.log.Info("File uploaded successfully", zap.String("objectID", objID.String()))
+		// Compute hash to check uniqueness
+		filename := r.FormValue("filename")
 
-	// Start the HTTP server (if needed)
-	http.HandleFunc("/upload", func(w http.ResponseWriter, r *http.Request) {
-		s.log.Info("upload request")
+		// Upload file to FrostFS
+		err = s.uploadFileToFrostFS(ctx, fileContent, filename)
+		if err != nil {
+			http.Error(w, "Failed to upload file: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
 
-		// Handle file upload via HTTP (if needed)
+		fmt.Fprintln(w, "File uploaded successfully")
 	})
 
+	http.DefaultServeMux.HandleFunc("/get", func(w http.ResponseWriter, r *http.Request) {
+		s.log.Info("GET request received")
+		filename := r.URL.Query().Get("filename")
+		if filename == "" {
+			http.Error(w, "Missing 'filename' parameter", http.StatusBadRequest)
+			return
+		}
+
+		// Retrieve file from FrostFS (add your logic)
+		fileContent, err := s.getFileFromFrostFS(ctx, filename)
+		if err != nil {
+			http.Error(w, "Failed to retrieve file: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", filename))
+		w.Header().Set("Content-Type", "application/octet-stream")
+		w.Write(fileContent)
+	})
+
+	http.DefaultServeMux.HandleFunc("/delete", func(w http.ResponseWriter, r *http.Request) {
+		s.log.Info("DELETE request received")
+		filename := r.URL.Query().Get("filename")
+		if filename == "" {
+			http.Error(w, "Missing 'filename' parameter", http.StatusBadRequest)
+			return
+		}
+
+		// Delete file from FrostFS (add your logic)
+		err := s.deleteFileFromFrostFS(ctx, filename)
+		if err != nil {
+			http.Error(w, "Failed to delete file: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		fmt.Fprintln(w, "File deleted successfully")
+	})
+
+	s.log.Info("HTTP server started")
 	return http.ListenAndServe(viper.GetString(cfgListenAddress), nil)
+}
+
+// Additional helper methods (add your logic for FrostFS interactions)
+func (s *Server) getFileFromFrostFS(ctx context.Context, filename string) ([]byte, error) {
+	// var searchFilter object.SearchFilters
+	// searchFilter.AddFilter("filename", object.MatchStringEqual, filename)
+
+	// Implement logic to retrieve the file from FrostFS
+	return nil, fmt.Errorf("not implemented")
+}
+
+func (s *Server) deleteFileFromFrostFS(ctx context.Context, filename string) error {
+	// Implement logic to delete the file from FrostFS
+	return fmt.Errorf("not implemented")
 }
 
 func (s *Server) uploadFileToFrostFS(ctx context.Context, fileContent []byte, filename string) error {
@@ -189,8 +276,18 @@ func (s *Server) uploadFileToFrostFS(ctx context.Context, fileContent []byte, fi
 	attr.SetKey("filename")
 	attr.SetValue(filename)
 
-	// Add an attribute for the filename
-	obj.SetAttributes(attr)
+	hash := sha256.Sum256(fileContent)
+
+	// Convert the hash to a hexadecimal string
+	hashString := hex.EncodeToString(hash[:])
+
+	// Add an attribute for the file hash
+	fileHash := *object.NewAttribute()
+	fileHash.SetKey("filehash")
+	fileHash.SetValue(hashString)
+
+	// Add an attribute for the filename and fileHash
+	obj.SetAttributes(attr, fileHash)
 
 	// Prepare the object for upload
 	var prm pool.PrmObjectPut
@@ -203,7 +300,29 @@ func (s *Server) uploadFileToFrostFS(ctx context.Context, fileContent []byte, fi
 		return fmt.Errorf("put object: %w", err)
 	}
 
-	fmt.Print(objID.ObjectID)
+	fmt.Println(objID.ObjectID)
+
+	frostFSAddr := s.cnrID.EncodeToString() + "/" + objID.ObjectID.EncodeToString()
+	s.log.Info("Object uploaded to FrostFS", zap.String("address", frostFSAddr))
+
+	// Call the smart contract's AddDocument method
+	result, err := s.act.Call(
+		s.contractHash,
+		"addDocument",
+		ownerID.WalletBytes(), // Convert ownerID to []byte
+		filename,              // Document name
+		fileContent,           // Document content
+	)
+	if err != nil {
+		return fmt.Errorf("invoke AddDocument: %w", err)
+	}
+
+	fmt.Println(result)
+
+	s.log.Info("Smart contract invoked to register document",
+		zap.String("filename", filename),
+		zap.String("address", frostFSAddr),
+	)
 
 	return nil
 }
@@ -235,4 +354,23 @@ func die(err error) {
 	debug.PrintStack()
 	_, _ = fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 	os.Exit(1)
+}
+
+func (s *Server) cleanup() {
+	// Example: Close the RPC client connection
+	if s.rpcCli != nil {
+		s.rpcCli.Close()
+	}
+
+	// Example: Close the object pool
+	if s.p != nil {
+		s.p.Close()
+	}
+
+	// Example: Sync and flush logs
+	if s.log != nil {
+		_ = s.log.Sync()
+	}
+
+	fmt.Println("Resources released successfully.")
 }
