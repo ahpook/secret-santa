@@ -33,7 +33,7 @@ const (
 	cfgRPCEndpointWS    = "rpc_endpoint_ws"
 	cfgWallet           = "wallet"
 	cfgPassword         = "password"
-	cfgNyanContract     = "nyan_contract"
+	cfgNyanContract     = "goofyahhdocuments_contract"
 	cfgStorageNode      = "storage_node"
 	cfgStorageContainer = "storage_container"
 	cfgListenAddress    = "listen_address"
@@ -48,7 +48,6 @@ type Server struct {
 	cnrID    cid.ID
 	log      *zap.Logger
 	rpcCli   *rpcclient.Client
-	sub      subscriber.Subscriber
 }
 
 func main() {
@@ -114,9 +113,9 @@ func NewServer(ctx context.Context) (*Server, error) {
 		return nil, fmt.Errorf("new morph client: %w", err)
 	}
 
-	if err = neoClient.EnableNotarySupport(); err != nil {
-		return nil, err
-	}
+	// if err = neoClient.EnableNotarySupport(); err != nil {
+	// 	return nil, err
+	// }
 
 	params := new(subscriber.Params)
 	params.Client = neoClient
@@ -125,14 +124,14 @@ func NewServer(ctx context.Context) (*Server, error) {
 		return nil, err
 	}
 	params.Log = l
-	sub, err := subscriber.New(ctx, params)
+	_, err = subscriber.New(ctx, params)
 	if err != nil {
 		return nil, err
 	}
 
-	if err = sub.SubscribeForNotaryRequests(acc.ScriptHash()); err != nil {
-		return nil, err
-	}
+	// if err = sub.SubscribeForNotaryRequests(acc.ScriptHash()); err != nil {
+	// 	return nil, err
+	// }
 
 	log, err := zap.NewDevelopment()
 	if err != nil {
@@ -148,7 +147,6 @@ func NewServer(ctx context.Context) (*Server, error) {
 		gasAct:   nep17.New(act, gas.Hash),
 		cnrID:    cnrID,
 		log:      log,
-		sub:      sub,
 	}, nil
 }
 
@@ -202,7 +200,7 @@ func (s *Server) uploadFileToFrostFS(ctx context.Context, fileContent []byte, fi
 	// Upload the object to FrostFS
 	objID, err := s.p.PutObject(ctx, prm)
 	if err != nil {
-		return fmt.Errorf("put object '%s': %w", err)
+		return fmt.Errorf("put object: %w", err)
 	}
 
 	fmt.Print(objID.ObjectID)
