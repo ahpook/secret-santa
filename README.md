@@ -30,3 +30,7 @@
 	- `neo-go wallet nep17 transfer --from ... --to ... --token GAS --amount 20 -w morph/node-wallet.json -r http://localhost:30333`
 	- `neo-go contract deploy -i secret_santa/secret_santa.nef -m secret_santa/secret_santa.manifest.json -r  http://localhost:30333 -w wallets/wallet1.json`
 		- `curl -s --data '{"id":1,"jsonrpc":"2.0","method":"getapplicationlog","params":["4f31ef755abe071114b12b8d2f021308c5ed5f55bdbe9992d89830f6b7111203"]}' http://localhost:30333 | jq`
+
+
+
+- `frostfs-cli -c /config/user-cli-cfg.yaml object put --cid HRnXPvSEuaZttVSmSADKJvvbBsp9o4swKEtmnD2avVxp --file goofyahhdocument.txt`

@@ -33,7 +33,7 @@ const (
 	cfgRPCEndpointWS    = "rpc_endpoint_ws"
 	cfgWallet           = "wallet"
 	cfgPassword         = "password"
-	cfgNyanContract     = "goofyahhdocuments_contract"
+	cfgContractHash     = "goofyahhdocuments_contract"
 	cfgStorageNode      = "storage_node"
 	cfgStorageContainer = "storage_container"
 	cfgListenAddress    = "listen_address"
@@ -70,7 +70,7 @@ func main() {
 	die(s.Listen(ctx))
 }
 
-func NewServer(ctx context.Context) (*Server, error) {
+func ExtractAccountFromWallet(ctx context.Context) (*Server, error) {
 	rpcCli, err := rpcclient.New(ctx, viper.GetString(cfgRPCEndpoint), rpcclient.Options{})
 	if err != nil {
 		return nil, err
@@ -96,7 +96,7 @@ func NewServer(ctx context.Context) (*Server, error) {
 		return nil, err
 	}
 
-	contractNyanHash, err := util.Uint160DecodeStringLE(viper.GetString(cfgNyanContract))
+	contractHash, err := util.Uint160DecodeStringLE(viper.GetString(cfgContractHash))
 	if err != nil {
 		return nil, err
 	}
@@ -143,7 +143,7 @@ func NewServer(ctx context.Context) (*Server, error) {
 		acc:      acc,
 		act:      act,
 		rpcCli:   rpcCli,
-		nyanHash: contractNyanHash,
+		nyanHash: contractHash,
 		gasAct:   nep17.New(act, gas.Hash),
 		cnrID:    cnrID,
 		log:      log,
