@@ -32,6 +32,12 @@ go.work.sum
 user-cli-cfg.yaml
 config.yaml
 
+documentsdistributor/go.sum
+documentsdistributor/go.mod
+documentsdistributor/main.nef
+documentsdistributor/main.manifest.json
+documentsdistributor/main.bindings.yml
+
 # Ignore node_modules (if any Node.js dependencies are used)
 node_modules/
 
