@@ -33,21 +33,21 @@ const (
 	cfgRPCEndpointWS    = "rpc_endpoint_ws"
 	cfgWallet           = "wallet"
 	cfgPassword         = "password"
-	cfgNyanContract     = "goofyahhdocuments_contract"
+	cfgContractHash     = "contractHash"
 	cfgStorageNode      = "storage_node"
 	cfgStorageContainer = "storage_container"
 	cfgListenAddress    = "listen_address"
 )
 
 type Server struct {
-	p        *pool.Pool
-	acc      *wallet.Account
-	act      *actor.Actor
-	gasAct   *nep17.Token
-	nyanHash util.Uint160
-	cnrID    cid.ID
-	log      *zap.Logger
-	rpcCli   *rpcclient.Client
+	p            *pool.Pool
+	acc          *wallet.Account
+	act          *actor.Actor
+	gasAct       *nep17.Token
+	contractHash util.Uint160
+	cnrID        cid.ID
+	log          *zap.Logger
+	rpcCli       *rpcclient.Client
 }
 
 func main() {
@@ -96,7 +96,7 @@ func NewServer(ctx context.Context) (*Server, error) {
 		return nil, err
 	}
 
-	contractNyanHash, err := util.Uint160DecodeStringLE(viper.GetString(cfgNyanContract))
+	contractHash, err := util.Uint160DecodeStringLE(viper.GetString(cfgContractHash))
 	if err != nil {
 		return nil, err
 	}
@@ -139,14 +139,14 @@ func NewServer(ctx context.Context) (*Server, error) {
 	}
 
 	return &Server{
-		p:        p,
-		acc:      acc,
-		act:      act,
-		rpcCli:   rpcCli,
-		nyanHash: contractNyanHash,
-		gasAct:   nep17.New(act, gas.Hash),
-		cnrID:    cnrID,
-		log:      log,
+		p:            p,
+		acc:          acc,
+		act:          act,
+		rpcCli:       rpcCli,
+		contractHash: contractHash,
+		gasAct:       nep17.New(act, gas.Hash),
+		cnrID:        cnrID,
+		log:          log,
 	}, nil
 }
 
