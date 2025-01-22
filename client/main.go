@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	serverURL := "http://localhost:5580" // Replace with your server's address
+	serverURL := "http://localhost:5520" // Replace with your server's address
 
 	// Example: Upload a file
 	filename := "goofyahhdocument.txt"
