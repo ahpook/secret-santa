@@ -10,9 +10,8 @@ import (
 )
 
 func main() {
-	serverURL := "http://localhost:5520" // Replace with your server's address
+	serverURL := "http://localhost:5520"
 
-	// Example: Upload a file
 	filename := "goofyahhdocument.txt"
 	err := uploadFile(serverURL, filename)
 	if err != nil {
@@ -21,7 +20,6 @@ func main() {
 	}
 	fmt.Println("File uploaded successfully.")
 
-	// Example: Download the file
 	downloadedFilename := "downloaded_" + filename
 	err = downloadFile(serverURL, filename, downloadedFilename)
 	if err != nil {
@@ -30,7 +28,6 @@ func main() {
 	}
 	fmt.Println("File downloaded successfully.")
 
-	// Example: Delete the file
 	err = deleteFile(serverURL, filename)
 	if err != nil {
 		fmt.Printf("Failed to delete file: %v\n", err)
@@ -46,7 +43,6 @@ func uploadFile(serverURL, filename string) error {
 	}
 	defer file.Close()
 
-	// Create a form file for the upload
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 	formFile, err := writer.CreateFormFile("file", filename)
@@ -54,19 +50,16 @@ func uploadFile(serverURL, filename string) error {
 		return fmt.Errorf("failed to create form file: %w", err)
 	}
 
-	// Copy the file content to the form file
 	_, err = io.Copy(formFile, file)
 	if err != nil {
 		return fmt.Errorf("failed to copy file content: %w", err)
 	}
 
-	// Close the multipart writer to finalize the form
 	err = writer.Close()
 	if err != nil {
 		return fmt.Errorf("failed to close writer: %w", err)
 	}
 
-	// Make the HTTP request
 	resp, err := http.Post(serverURL+"/put?filename="+filename, writer.FormDataContentType(), body)
 	if err != nil {
 		return fmt.Errorf("failed to make POST request: %w", err)
@@ -91,14 +84,12 @@ func downloadFile(serverURL, filename, destFilename string) error {
 		return fmt.Errorf("server returned non-OK status: %s", resp.Status)
 	}
 
-	// Create the destination file
 	destFile, err := os.Create(destFilename)
 	if err != nil {
 		return fmt.Errorf("failed to create destination file: %w", err)
 	}
 	defer destFile.Close()
 
-	// Copy the response body to the destination file
 	_, err = io.Copy(destFile, resp.Body)
 	if err != nil {
 		return fmt.Errorf("failed to write to destination file: %w", err)

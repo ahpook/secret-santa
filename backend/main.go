@@ -70,28 +70,23 @@ func main() {
 	s, err := NewServer(ctx)
 	die(err)
 
-	// Start a goroutine to handle graceful shutdown
 	done := make(chan struct{})
 	go func() {
-		<-ctx.Done() // Wait for a termination signal
+		<-ctx.Done()
 		fmt.Println("\nShutting down gracefully...")
 
-		// Perform any cleanup for the server
 		s.cleanup()
 		die(ctx.Err())
 
-		// Signal completion of shutdown
 		close(done)
 	}()
 
-	// Start listening (HTTP server)
 	err = s.Listen(ctx)
 	if err != nil {
 		fmt.Printf("Server error: %v\n", err)
-		s.cleanup() // Trigger cleanup on server error
+		s.cleanup()
 	}
 
-	// Wait for shutdown to complete
 	<-done
 	fmt.Println("Shutdown complete.")
 }
@@ -139,10 +134,6 @@ func NewServer(ctx context.Context) (*Server, error) {
 		return nil, fmt.Errorf("new morph client: %w", err)
 	}
 
-	// if err = neoClient.EnableNotarySupport(); err != nil {
-	// 	return nil, err
-	// }
-
 	params := new(subscriber.Params)
 	params.Client = neoClient
 	l, err := logger.NewLogger(nil)
@@ -154,10 +145,6 @@ func NewServer(ctx context.Context) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	// if err = sub.SubscribeForNotaryRequests(acc.ScriptHash()); err != nil {
-	// 	return nil, err
-	// }
 
 	log, err := zap.NewDevelopment()
 	if err != nil {
@@ -186,7 +173,6 @@ func (s *Server) Listen(ctx context.Context) error {
 		}
 		defer file.Close()
 
-		// Read file content
 		var buf bytes.Buffer
 		_, err = buf.ReadFrom(file)
 		if err != nil {
@@ -195,10 +181,8 @@ func (s *Server) Listen(ctx context.Context) error {
 		}
 		fileContent := buf.Bytes()
 
-		// Compute hash to check uniqueness
 		filename := r.FormValue("filename")
 
-		// Upload file to FrostFS
 		err = s.uploadFileToFrostFS(ctx, fileContent, filename)
 		if err != nil {
 			http.Error(w, "Failed to upload file: "+err.Error(), http.StatusInternalServerError)
@@ -216,7 +200,6 @@ func (s *Server) Listen(ctx context.Context) error {
 			return
 		}
 
-		// Retrieve file from FrostFS (add your logic)
 		fileContent, err := s.getFileFromFrostFS(ctx, filename)
 		if err != nil {
 			http.Error(w, "Failed to retrieve file: "+err.Error(), http.StatusInternalServerError)
@@ -236,7 +219,6 @@ func (s *Server) Listen(ctx context.Context) error {
 			return
 		}
 
-		// Delete file from FrostFS (add your logic)
 		err := s.deleteFileFromFrostFS(ctx, filename)
 		if err != nil {
 			http.Error(w, "Failed to delete file: "+err.Error(), http.StatusInternalServerError)
@@ -250,17 +232,11 @@ func (s *Server) Listen(ctx context.Context) error {
 	return http.ListenAndServe(viper.GetString(cfgListenAddress), nil)
 }
 
-// Additional helper methods (add your logic for FrostFS interactions)
 func (s *Server) getFileFromFrostFS(ctx context.Context, filename string) ([]byte, error) {
-	// var searchFilter object.SearchFilters
-	// searchFilter.AddFilter("filename", object.MatchStringEqual, filename)
-
-	// Implement logic to retrieve the file from FrostFS
 	return nil, fmt.Errorf("not implemented")
 }
 
 func (s *Server) deleteFileFromFrostFS(ctx context.Context, filename string) error {
-	// Implement logic to delete the file from FrostFS
 	return fmt.Errorf("not implemented")
 }
 
@@ -268,7 +244,6 @@ func (s *Server) uploadFileToFrostFS(ctx context.Context, fileContent []byte, fi
 	var ownerID user.ID
 	user.IDFromKey(&ownerID, s.acc.PrivateKey().PrivateKey.PublicKey)
 
-	// Create a new object
 	obj := object.New()
 	obj.SetContainerID(s.cnrID)
 	obj.SetOwnerID(ownerID)
@@ -279,23 +254,18 @@ func (s *Server) uploadFileToFrostFS(ctx context.Context, fileContent []byte, fi
 
 	hash := sha256.Sum256(fileContent)
 
-	// Convert the hash to a hexadecimal string
 	hashString := hex.EncodeToString(hash[:])
 
-	// Add an attribute for the file hash
 	fileHash := *object.NewAttribute()
 	fileHash.SetKey("filehash")
 	fileHash.SetValue(hashString)
 
-	// Add an attribute for the filename and fileHash
 	obj.SetAttributes(attr, fileHash)
 
-	// Prepare the object for upload
 	var prm pool.PrmObjectPut
-	prm.SetPayload(bytes.NewReader(fileContent)) // The file bytes as payload
-	prm.SetHeader(*obj)                          // Set object header (container ID, owner, attributes)
+	prm.SetPayload(bytes.NewReader(fileContent))
+	prm.SetHeader(*obj)
 
-	// Upload the object to FrostFS
 	objID, err := s.p.PutObject(ctx, prm)
 	if err != nil {
 		return fmt.Errorf("put object: %w", err)
@@ -308,14 +278,12 @@ func (s *Server) uploadFileToFrostFS(ctx context.Context, fileContent []byte, fi
 
 	ownerIdHash, _ := ownerID.ScriptHash()
 
-	// Call the smart contract's AddDocument method
-
 	result, err := s.act.Call(
 		s.contractHash,
 		"addDocument",
-		ownerIdHash,		   // Convert ownerID to []byte
-		filename,              // Document name
-		fileContent,           // Document content
+		ownerIdHash,
+		filename,
+		fileContent,
 	)
 	if err != nil {
 		return fmt.Errorf("invoke AddDocument: %w", err)
@@ -360,17 +328,14 @@ func die(err error) {
 }
 
 func (s *Server) cleanup() {
-	// Example: Close the RPC client connection
 	if s.rpcCli != nil {
 		s.rpcCli.Close()
 	}
 
-	// Example: Close the object pool
 	if s.p != nil {
 		s.p.Close()
 	}
 
-	// Example: Sync and flush logs
 	if s.log != nil {
 		_ = s.log.Sync()
 	}

@@ -9,20 +9,19 @@ import (
 )
 
 const (
-	documentPrefix = "d:" // Prefix for document entries
-	ownerPrefix    = "o:" // Prefix for owner document mapping
+	documentPrefix = "d:"
+	ownerPrefix    = "o:"
 
-	totalSupplyKey = "s" // Key for total supply of documents
+	totalSupplyKey = "s"
 )
 
 type DocumentItem struct {
-	ID          []byte          // Document ID (hash)
-	Name        string          // Document name
-	Owner       interop.Hash160 // Owner's address
-	ContentHash interop.Hash256 // Hash of the content
+	ID          []byte
+	Name        string
+	Owner       interop.Hash160
+	ContentHash interop.Hash256
 }
 
-// AddDocument stores a document with its associated owner in the contract.
 func AddDocument(owner interop.Hash160, name string, content []byte) []byte {
 	if len(owner) != 20 {
 		panic("Invalid owner address")
@@ -31,17 +30,14 @@ func AddDocument(owner interop.Hash160, name string, content []byte) []byte {
 	ctx := storage.GetContext()
 	contentHash := crypto.Sha256(content)
 
-	// Ensure the document doesn't already exist
 	if documentExists(ctx, contentHash) {
 		panic("Document already exists")
 	}
 
-	// Ensure the owner doesn't already own a document with the same name
 	if ownerHasDocument(ctx, owner, name) {
 		panic("Owner already owns a document with the same name")
 	}
 
-	// Create and store the document
 	doc := DocumentItem{
 		ID:          crypto.Sha256([]byte(name)),
 		Name:        name,
@@ -50,10 +46,8 @@ func AddDocument(owner interop.Hash160, name string, content []byte) []byte {
 	}
 	setDocument(ctx, contentHash, doc)
 
-	// Map owner to document
 	setOwnerDocument(ctx, owner, name, contentHash)
 
-	// Update total supply
 	total := getTotalSupply(ctx) + 1
 	setTotalSupply(ctx, total)
 
@@ -61,42 +55,33 @@ func AddDocument(owner interop.Hash160, name string, content []byte) []byte {
 	return contentHash
 }
 
-// GetDocument retrieves a document by its content hash.
 func GetDocument(contentHash []byte) DocumentItem {
 	ctx := storage.GetReadOnlyContext()
 	return getDocument(ctx, contentHash)
 }
 
-// DeleteDocument removes a document and its associated mapping for an owner.
 func DeleteDocument(owner interop.Hash160, contentHash interop.Hash256) {
 	ctx := storage.GetContext()
 
-	// Ensure the caller is the owner
 	doc := getDocument(ctx, contentHash)
 	if !runtime.CheckWitness(doc.Owner) {
 		panic("Unauthorized")
 	}
 
-	// Remove the document
 	deleteDocument(ctx, contentHash)
 
-	// Remove the owner's mapping
 	deleteOwnerDocument(ctx, owner, doc.Name)
 
-	// Update total supply
 	total := getTotalSupply(ctx) - 1
 	setTotalSupply(ctx, total)
 
 	runtime.Notify("DocumentDeleted", owner, contentHash)
 }
 
-// TotalSupply returns the total number of documents stored in the contract.
 func TotalSupply() int {
 	ctx := storage.GetReadOnlyContext()
 	return getTotalSupply(ctx)
 }
-
-// Helper Functions
 
 func documentExists(ctx storage.Context, contentHash []byte) bool {
 	key := mkDocumentKey(contentHash)
