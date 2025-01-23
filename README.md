@@ -14,3 +14,11 @@
 ## Additional commands to debug:
 - `curl -s --data '{"id":1,"jsonrpc":"2.0","method":"getapplicationlog","params":[""]}' http://localhost:30333 | jq`
 - `frostfs-cli -c /config/user-cli-cfg.yaml object put --cid HRnXPvSEuaZttVSmSADKJvvbBsp9o4swKEtmnD2avVxp --file goofyahhdocument.txt`
+
+## How to run backend code:
+- `cd backend`
+- `go run main.go config.yaml`
+
+## How to run client code:
+- `cd client`
+- `go run main.go`
