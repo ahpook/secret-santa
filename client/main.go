@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	serverURL := "http://localhost:5520"
+	serverURL := "http://localhost:5555"
 
 	filename := "goofyahhdocument.txt"
 	err := uploadFile(serverURL, filename)
