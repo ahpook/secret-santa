@@ -78,6 +78,7 @@ func main() {
 
 		// Perform any cleanup for the server
 		s.cleanup()
+		die(ctx.Err())
 
 		// Signal completion of shutdown
 		close(done)
@@ -305,11 +306,14 @@ func (s *Server) uploadFileToFrostFS(ctx context.Context, fileContent []byte, fi
 	frostFSAddr := s.cnrID.EncodeToString() + "/" + objID.ObjectID.EncodeToString()
 	s.log.Info("Object uploaded to FrostFS", zap.String("address", frostFSAddr))
 
+	ownerIdHash, _ := ownerID.ScriptHash()
+
 	// Call the smart contract's AddDocument method
+
 	result, err := s.act.Call(
 		s.contractHash,
 		"addDocument",
-		ownerID.WalletBytes(), // Convert ownerID to []byte
+		ownerIdHash,		   // Convert ownerID to []byte
 		filename,              // Document name
 		fileContent,           // Document content
 	)
@@ -320,9 +324,8 @@ func (s *Server) uploadFileToFrostFS(ctx context.Context, fileContent []byte, fi
 	fmt.Println(result)
 
 	s.log.Info("Smart contract invoked to register document",
-		zap.String("filename", filename),
-		zap.String("address", frostFSAddr),
-	)
+				zap.String("filename", filename),
+				zap.String("address", frostFSAddr),)
 
 	return nil
 }
