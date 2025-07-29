@@ -23,4 +23,3 @@ jobs:
         uses: actions/go-dependency-submission@v1
         with:
           go-mod-path: go.mod
-          go-build-target: hello.go
