@@ -1,4 +1,4 @@
-# Steps to run project
+# Steps to run this project
 ## From frostfs-aio local repo:
 - `make image-aio`
 - `make up`
