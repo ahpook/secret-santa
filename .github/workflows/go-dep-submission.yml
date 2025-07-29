@@ -2,7 +2,7 @@ name: Go Dependency Submission
 on:
   push:
     branches:
-      - main
+      - master
 
 # The API requires write permission on the repository to submit dependencies
 permissions:
